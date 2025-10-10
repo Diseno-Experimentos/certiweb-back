@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertiWeb.API", "CertiWeb.API\CertiWeb.API.csproj", "{C374DD93-902E-46E1-83A9-6ABA962B0AF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertiWeb.UnitTests", "CertiWeb.UnitTests\CertiWeb.UnitTests.csproj", "{D5E8A2B1-3F4C-4A2B-8E6D-1B9C8F7A5E3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertiWeb.IntegrationTests", "CertiWeb.IntegrationTests\CertiWeb.IntegrationTests.csproj", "{A7F9B2C3-5E8D-4B1A-9F2E-6C4A8B7D3E5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{C374DD93-902E-46E1-83A9-6ABA962B0AF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C374DD93-902E-46E1-83A9-6ABA962B0AF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C374DD93-902E-46E1-83A9-6ABA962B0AF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5E8A2B1-3F4C-4A2B-8E6D-1B9C8F7A5E3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5E8A2B1-3F4C-4A2B-8E6D-1B9C8F7A5E3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5E8A2B1-3F4C-4A2B-8E6D-1B9C8F7A5E3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5E8A2B1-3F4C-4A2B-8E6D-1B9C8F7A5E3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7F9B2C3-5E8D-4B1A-9F2E-6C4A8B7D3E5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7F9B2C3-5E8D-4B1A-9F2E-6C4A8B7D3E5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7F9B2C3-5E8D-4B1A-9F2E-6C4A8B7D3E5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7F9B2C3-5E8D-4B1A-9F2E-6C4A8B7D3E5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
