@@ -1,0 +1,176 @@
+# Nombre del Pipeline de DevOps para CertiWeb
+name: CertiWeb CI/CD Pipeline
+
+on:
+  # 1. Disparar en Pull Requests hacia 'main' (Solo compila y prueba)
+  pull_request:
+    branches: [ main ]
+  
+  # 2. Disparar en 'push' a 'main' (Compila, prueba, y despliega)
+  push:
+    branches: [ main ]
+
+jobs:
+  #----------------------------------------------------
+  # 7.1. INTEGRACIÓN CONTINUA (CI)
+  #----------------------------------------------------
+  build_and_test:
+    name: 1. Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Descargar el código del repositorio
+    - name: Checkout repository # Descarga el código fuente
+      uses: actions/checkout@v4
+
+    # 2. Configurar el SDK de .NET 9.0 (basado en CertiWeb.API.csproj)
+    - name: Setup .NET 9.0 SDK # Prepara el entorno .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    # 3. Restaurar dependencias de NuGet
+    - name: Restore dependencies # Restaura dependencias NuGet
+      run: dotnet restore certiweb-platform.sln
+
+    # 4. Compilar la solución completa
+    - name: Build solution # Compila la solución
+      run: dotnet build certiweb-platform.sln --no-restore
+
+    # 5. Ejecutar TODOS los proyectos de prueba (Unit, Integration, System)
+    #
+    - name: Run all tests # Ejecuta todas las pruebas (unitarias, integración, sistema)
+      run: dotnet test certiweb-platform.sln --no-build --verbosity normal
+
+  #----------------------------------------------------
+  # ARTEFACTO DE CI: Construir y publicar imagen Docker
+  #----------------------------------------------------
+  build_and_push_docker:
+    name: 2. Build & Push Docker Image
+    runs-on: ubuntu-latest
+    # Este job solo corre si 'build_and_test' fue exitoso
+    needs: build_and_test
+    # Solo corre en 'push' a 'main', no en Pull Requests
+    if: github.event_name == 'push' 
+
+    steps:
+    - name: Checkout repository # Descarga el código fuente
+      uses: actions/checkout@v4
+
+    # 1. Iniciar sesión en un registro de contenedores (ej. Docker Hub)
+    # Necesitas configurar DOCKERHUB_USERNAME y DOCKERHUB_TOKEN como secretos en GitHub
+    - name: Log in to Docker Hub # Autenticación en Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 2. Construir y publicar la imagen usando el Dockerfile del proyecto
+    - name: Build and push Docker image # Construye y publica la imagen Docker
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        # Apunta al Dockerfile dentro de la carpeta de la API
+        file: CertiWeb.API/Dockerfile 
+        push: true
+        tags: svennn/certiweb-api:latest 
+
+  #----------------------------------------------------
+  # 7.2. ENTREGA CONTINUA (CD) - Staging
+  #----------------------------------------------------
+  deploy_staging:
+    name: 3. Deploy to Staging
+    runs-on: ubuntu-latest
+    # Depende de que la imagen Docker se haya publicado
+    needs: build_and_push_docker 
+
+    # Configura el "Entorno" de GitHub. Permite reglas de protección
+    # y aprobación manual si se desea.
+    environment:
+      name: staging
+      url: http://staging.certiweb.com
+
+    steps:
+    # 1. Usar SSH para conectarse al servidor de Staging y desplegar
+    # secretos para la IP/Host, Usuario, y Llave SSH
+    - name: Deploy to Staging Server # Despliega en servidor de Staging vía SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USERNAME }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        script: |
+          # 1. Navegar a la carpeta del proyecto en el servidor
+          cd /var/www/certiweb-back
+          
+          # 2. Obtener la imagen más reciente construida por la CI
+          docker pull svennn/certiweb-api:latest
+          
+          # 3. Definir secretos para Docker Compose
+          # El docker-compose.yaml usa variables de entorno
+          export MYSQL_ROOT_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
+          export CONNECTION_STRING="server=mysql;user=root;password=${{ secrets.STAGING_DB_PASSWORD }};database=certiweb"
+          
+          # 4. Levantar los servicios usando el docker-compose.yaml
+          # --no-build: Usa la imagen que acabamos de 'pull'
+          # -d: Modo detached
+          # api: Solo reinicia el servicio 'api', la BBDD puede seguir corriendo
+          docker-compose -f CertiWeb.API/docker-compose.yaml up -d --no-build api
+
+  #----------------------------------------------------
+  # 7.3. DESPLIEGUE CONTINUO (CD) - Producción
+  #----------------------------------------------------
+  deploy_production:
+    name: 4. Deploy to Production
+    runs-on: ubuntu-latest
+    # Depende de que el despliegue a Staging haya sido exitoso
+    needs: deploy_staging
+
+    # Esto es Despliegue Continuo
+    environment:
+      name: production
+      url: http://www.certiweb.com
+    
+    steps:
+    # 1. Conexión y despliegue en el servidor de Producción
+    - name: Deploy to Production Server # Despliega en servidor de Producción vía SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.PROD_HOST }}
+        username: ${{ secrets.PROD_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY }}
+        script: |
+          cd /var/www/certiweb-back
+          docker pull svennn/certiweb-api:latest
+          
+          # 4. Usar los secretos de PRODUCCIÓN
+          export MYSQL_ROOT_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          export CONNECTION_STRING="server=mysql;user=root;password=${{ secrets.PROD_DB_PASSWORD }};database=certiweb_prod"
+          
+          docker-compose -f CertiWeb.API/docker-compose.yaml up -d --no-build api
+
+  #----------------------------------------------------
+  # 7.4. MONITOREO, ALERTAS Y NOTIFICACIONES
+  #----------------------------------------------------
+  monitoring_and_alerts:
+    name: 5. Monitoring & Alerts
+    runs-on: ubuntu-latest
+    needs: deploy_production
+
+    steps:
+      - name: Send Email Notification # Envía correo tras despliegue en producción
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Despliegue completado en producción para CertiWeb"
+          to: ${{ secrets.NOTIFY_EMAILS }}
+          from: CertiWeb CI/CD <${{ secrets.SMTP_USERNAME }}
+          body: |
+            El despliegue en producción para CertiWeb se ha completado exitosamente.
+            Revisa monitoreo en http://grafana.certiweb.com
+      - name: Trigger Monitoring Check # Llama a endpoint de monitoreo externo
+        run: |
+          curl -X POST https://monitoring.certiweb.com/api/checks/certiweb-prod?token=${{ secrets.MONITORING_TOKEN }}
