@@ -3,7 +3,7 @@ using CertiWeb.API.Certifications.Domain.Model.ValueObjects;
 using CertiWeb.API.Certifications.Domain.Services;
 using CertiWeb.API.Certifications.Domain.Repositories;
 using Moq;
-using Xunit;
+using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -23,102 +23,129 @@ public class CarDomainServiceTests
         _brandRepositoryMock = new Mock<IBrandRepository>();
     }
 
-    [Fact]
+    [Test]
     public async Task ValidateCarUniqueness_WhenLicensePlateExists_ShouldReturnFalse()
     {
         // Arrange
         var licensePlate = new LicensePlate("ABC-123");
-        var existingCar = new Car(
-            1, 
-            "Test Model", 
-            new Year(2020), 
-            new Price(25000), 
-            licensePlate, 
-            null
+        var createCmd = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: "Test Model",
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: 2020,
+            BrandId: 1,
+            Model: "Test Model",
+            Description: null,
+            PdfCertification: string.Empty,
+            ImageUrl: null,
+            Price: 25000m,
+            LicensePlate: licensePlate.Value,
+            OriginalReservationId: 0
         );
 
-        _carRepositoryMock.Setup(repo => repo.FindByLicensePlateAsync(licensePlate))
+        var existingCar = new Car(createCmd);
+        var idProp = typeof(Car).GetProperty("Id", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        idProp?.SetValue(existingCar, 1);
+
+        _carRepositoryMock.Setup(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value))
             .ReturnsAsync(existingCar);
 
         // Act
         var result = await ValidateCarUniqueness(licensePlate);
 
         // Assert
-        Assert.False(result);
-        _carRepositoryMock.Verify(repo => repo.FindByLicensePlateAsync(licensePlate), Times.Once);
+        Assert.IsFalse(result);
+        _carRepositoryMock.Verify(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task ValidateCarUniqueness_WhenLicensePlateDoesNotExist_ShouldReturnTrue()
     {
         // Arrange
         var licensePlate = new LicensePlate("XYZ-789");
 
-        _carRepositoryMock.Setup(repo => repo.FindByLicensePlateAsync(licensePlate))
+        _carRepositoryMock.Setup(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value))
             .ReturnsAsync((Car?)null);
 
         // Act
         var result = await ValidateCarUniqueness(licensePlate);
 
         // Assert
-        Assert.True(result);
-        _carRepositoryMock.Verify(repo => repo.FindByLicensePlateAsync(licensePlate), Times.Once);
+        Assert.IsTrue(result);
+        _carRepositoryMock.Verify(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value), Times.Once);
     }
 
-    [Theory]
-    [InlineData(2020, 25000, true)]  // Current year, reasonable price
-    [InlineData(2030, 30000, false)] // Future year
-    [InlineData(1800, 1000, false)]  // Too old
-    [InlineData(2020, 0, false)]     // Zero price
+    [TestCase(2020, 25000, true)]  // Current year, reasonable price
+    [TestCase(2030, 30000, false)] // Future year (validation should return false)
+    [TestCase(1800, 1000, false)]  // Too old
+    [TestCase(2020, 0, false)]     // Zero price
     public async Task ValidateCarSpecifications_WithVariousInputs_ShouldReturnExpectedResult(
         int year, decimal price, bool expected)
     {
-        // Arrange
-        var carYear = new Year(year);
-        var carPrice = new Price(price);
-
         // Act
-        var result = await ValidateCarSpecifications(carYear, carPrice);
+        var result = await ValidateCarSpecifications(year, price);
 
         // Assert
-        Assert.Equal(expected, result);
+        Assert.AreEqual(expected, result);
     }
 
-    [Fact]
+    [Test]
     public async Task CalculateCarValue_WithDepreciation_ShouldReturnCorrectValue()
     {
         // Arrange
         var originalPrice = new Price(30000);
-        var carYear = new Year(2018); // 6 years old (assuming current year 2024)
+        var carYear = new Year(2018);
         var expectedDepreciationRate = 0.15m; // 15% per year
-        var yearsOld = 6;
+        var currentYear = System.DateTime.Now.Year;
+        var yearsOld = currentYear - carYear.Value;
         var expectedValue = 30000 * (decimal)Math.Pow((double)(1 - expectedDepreciationRate), yearsOld);
 
         // Act
         var result = await CalculateCarValue(originalPrice, carYear);
 
         // Assert
-        Assert.True(Math.Abs(result - expectedValue) < 100); // Allow small rounding differences
+        Assert.Less(Math.Abs(result - expectedValue), 100); // Allow small rounding differences
     }
 
     // Helper methods that would be implemented in actual domain services
     private async Task<bool> ValidateCarUniqueness(LicensePlate licensePlate)
     {
-        var existingCar = await _carRepositoryMock.Object.FindByLicensePlateAsync(licensePlate);
+        var existingCar = await _carRepositoryMock.Object.FindCarByLicensePlateAsync(licensePlate.Value);
         return existingCar == null;
     }
 
-    private async Task<bool> ValidateCarSpecifications(Year year, Price price)
+    private async Task<bool> ValidateCarSpecifications(int yearValue, decimal priceValue)
     {
         await Task.CompletedTask; // Simulate async operation
-        
+
+        // Try to construct value objects; if construction fails, consider invalid specs.
+        Year year;
+        Price price;
+        try
+        {
+            year = new Year(yearValue);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+
+        try
+        {
+            price = new Price(priceValue);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+
         var currentYear = DateTime.Now.Year;
-        
+
         // Business rules validation
         if (year.Value > currentYear) return false; // Future year not allowed
         if (year.Value < 1900) return false; // Too old
         if (price.Value <= 0) return false; // Invalid price
-        
+
         return true;
     }
 

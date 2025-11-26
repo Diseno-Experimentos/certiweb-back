@@ -106,6 +106,6 @@ public class HealthCheckSystemTests : SystemTestBase
         // Assert
         responses.Should().HaveCount(numberOfRequests);
         responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.OK);
-        responses.Should().OnlyContain(r => r.Content.Headers.ContentType?.MediaType == "application/json");
+        responses.Should().OnlyContain(r => r.Content.Headers.ContentType != null && r.Content.Headers.ContentType.MediaType == "application/json");
     }
 }

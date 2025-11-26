@@ -4,7 +4,7 @@ using CertiWeb.API.Certifications.Domain.Model.Queries;
 using CertiWeb.API.Certifications.Domain.Model.ValueObjects;
 using CertiWeb.API.Certifications.Domain.Repositories;
 using Moq;
-using Xunit;
+using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,16 +16,17 @@ namespace CertiWeb.UnitTests.Certifications.Application.Internal.QueryServices;
 /// </summary>
 public class CarQueryServiceTests
 {
-    private readonly Mock<ICarRepository> _carRepositoryMock;
-    private readonly Mock<IBrandRepository> _brandRepositoryMock;
+    private Mock<ICarRepository> _carRepositoryMock;
+    private Mock<IBrandRepository> _brandRepositoryMock;
 
-    public CarQueryServiceTests()
+    [SetUp]
+    public void SetUp()
     {
         _carRepositoryMock = new Mock<ICarRepository>();
         _brandRepositoryMock = new Mock<IBrandRepository>();
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetAllCarsQuery_WhenCarsExist_ShouldReturnAllCars()
     {
         // Arrange
@@ -41,12 +42,12 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(3, result.Count());
+        Assert.IsNotNull(result);
+        Assert.AreEqual(3, result.Count());
         _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetAllCarsQuery_WhenNoCarsExist_ShouldReturnEmptyList()
     {
         // Arrange
@@ -62,12 +63,12 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
+        Assert.IsNotNull(result);
+        Assert.IsEmpty(result);
         _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetCarByIdQuery_WhenCarExists_ShouldReturnCar()
     {
         // Arrange
@@ -84,13 +85,13 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(carId, result.Id);
-        Assert.Equal(expectedCar.Model, result.Model);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(carId, result.Id);
+        Assert.AreEqual(expectedCar.Model, result.Model);
         _carRepositoryMock.Verify(repo => repo.FindByIdAsync(carId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetCarByIdQuery_WhenCarDoesNotExist_ShouldReturnNull()
     {
         // Arrange
@@ -106,11 +107,11 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.Null(result);
+        Assert.IsNull(result);
         _carRepositoryMock.Verify(repo => repo.FindByIdAsync(nonExistentId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetCarsByBrandQuery_WhenCarsExist_ShouldReturnFilteredCars()
     {
         // Arrange
@@ -118,7 +119,7 @@ public class CarQueryServiceTests
         var query = new GetCarsByBrandQuery(brandId);
         var cars = CreateTestCarsForBrand(brandId, 2);
 
-        _carRepositoryMock.Setup(repo => repo.FindByBrandIdAsync(brandId))
+        _carRepositoryMock.Setup(repo => repo.FindCarsByBrandIdAsync(brandId))
             .ReturnsAsync(cars);
 
         var service = CreateQueryService();
@@ -127,13 +128,13 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Count());
-        Assert.All(result, car => Assert.Equal(brandId, car.BrandId));
-        _carRepositoryMock.Verify(repo => repo.FindByBrandIdAsync(brandId), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(2, result.Count());
+        Assert.IsTrue(result.All(car => car.BrandId == brandId));
+        _carRepositoryMock.Verify(repo => repo.FindCarsByBrandIdAsync(brandId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetCarByLicensePlateQuery_WhenCarExists_ShouldReturnCar()
     {
         // Arrange
@@ -141,7 +142,7 @@ public class CarQueryServiceTests
         var query = new GetCarByLicensePlateQuery(licensePlate);
         var expectedCar = CreateTestCar(1, licensePlate: licensePlate);
 
-        _carRepositoryMock.Setup(repo => repo.FindByLicensePlateAsync(It.IsAny<LicensePlate>()))
+        _carRepositoryMock.Setup(repo => repo.FindCarByLicensePlateAsync(It.IsAny<string>()))
             .ReturnsAsync(expectedCar);
 
         var service = CreateQueryService();
@@ -150,25 +151,23 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(licensePlate, result.LicensePlate.Value);
-        _carRepositoryMock.Verify(repo => repo.FindByLicensePlateAsync(It.IsAny<LicensePlate>()), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(licensePlate, result.LicensePlate.Value);
+        _carRepositoryMock.Verify(repo => repo.FindCarByLicensePlateAsync(It.IsAny<string>()), Times.Once);
     }
 
-    [Theory]
-    [InlineData(2020, 2022)]
-    [InlineData(2018, 2020)]
-    [InlineData(2015, 2025)]
-    public async Task Handle_GetCarsByYearRangeQuery_WhenCarsExist_ShouldReturnFilteredCars(
-        int fromYear, int toYear)
+    [TestCase(2020, 2022)]
+    [TestCase(2018, 2020)]
+    [TestCase(2015, 2025)]
+    public async Task Handle_GetCarsByYearRangeQuery_WhenCarsExist_ShouldReturnFilteredCars(int fromYear, int toYear)
     {
         // Arrange
         var query = new GetCarsByYearRangeQuery(fromYear, toYear);
         var allCars = CreateTestCarsWithDifferentYears();
         var filteredCars = allCars.Where(c => c.Year.Value >= fromYear && c.Year.Value <= toYear).ToList();
 
-        _carRepositoryMock.Setup(repo => repo.FindByYearRangeAsync(fromYear, toYear))
-            .ReturnsAsync(filteredCars);
+        _carRepositoryMock.Setup(repo => repo.ListAsync())
+            .ReturnsAsync(allCars);
 
         var service = CreateQueryService();
 
@@ -176,29 +175,23 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.All(result, car => 
-        {
-            Assert.True(car.Year.Value >= fromYear);
-            Assert.True(car.Year.Value <= toYear);
-        });
-        _carRepositoryMock.Verify(repo => repo.FindByYearRangeAsync(fromYear, toYear), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.All(car => car.Year.Value >= fromYear && car.Year.Value <= toYear));
+        _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Theory]
-    [InlineData(10000, 30000)]
-    [InlineData(20000, 50000)]
-    [InlineData(0, 15000)]
-    public async Task Handle_GetCarsByPriceRangeQuery_WhenCarsExist_ShouldReturnFilteredCars(
-        decimal minPrice, decimal maxPrice)
+    [TestCase(10000, 30000)]
+    [TestCase(20000, 50000)]
+    [TestCase(0, 15000)]
+    public async Task Handle_GetCarsByPriceRangeQuery_WhenCarsExist_ShouldReturnFilteredCars(decimal minPrice, decimal maxPrice)
     {
         // Arrange
         var query = new GetCarsByPriceRangeQuery(minPrice, maxPrice);
         var allCars = CreateTestCarsWithDifferentPrices();
         var filteredCars = allCars.Where(c => c.Price.Value >= minPrice && c.Price.Value <= maxPrice).ToList();
 
-        _carRepositoryMock.Setup(repo => repo.FindByPriceRangeAsync(minPrice, maxPrice))
-            .ReturnsAsync(filteredCars);
+        _carRepositoryMock.Setup(repo => repo.ListAsync())
+            .ReturnsAsync(allCars);
 
         var service = CreateQueryService();
 
@@ -206,16 +199,12 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.All(result, car => 
-        {
-            Assert.True(car.Price.Value >= minPrice);
-            Assert.True(car.Price.Value <= maxPrice);
-        });
-        _carRepositoryMock.Verify(repo => repo.FindByPriceRangeAsync(minPrice, maxPrice), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.All(car => car.Price.Value >= minPrice && car.Price.Value <= maxPrice));
+        _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_SearchCarsQuery_WhenSearchTermMatches_ShouldReturnMatchingCars()
     {
         // Arrange
@@ -223,7 +212,7 @@ public class CarQueryServiceTests
         var query = new SearchCarsQuery(searchTerm);
         var matchingCars = CreateTestCarsWithModels(new[] { "Toyota Camry", "Toyota Corolla" });
 
-        _carRepositoryMock.Setup(repo => repo.SearchAsync(searchTerm))
+        _carRepositoryMock.Setup(repo => repo.ListAsync())
             .ReturnsAsync(matchingCars);
 
         var service = CreateQueryService();
@@ -232,23 +221,23 @@ public class CarQueryServiceTests
         var result = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Count());
-        Assert.All(result, car => Assert.Contains(searchTerm, car.Model, StringComparison.OrdinalIgnoreCase));
-        _carRepositoryMock.Verify(repo => repo.SearchAsync(searchTerm), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(2, result.Count());
+        Assert.IsTrue(result.All(car => car.Model.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
+        _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Handle_GetCarsWithPaginationQuery_WhenValidPagination_ShouldReturnPagedResults()
     {
         // Arrange
         var page = 1;
         var pageSize = 10;
         var query = new GetCarsWithPaginationQuery(page, pageSize);
-        var pagedCars = CreateTestCars(pageSize);
+        var allCars = CreateTestCars(pageSize * 3);
 
-        _carRepositoryMock.Setup(repo => repo.GetPagedAsync(page, pageSize))
-            .ReturnsAsync((pagedCars, pageSize * 3)); // Total count simulation
+        _carRepositoryMock.Setup(repo => repo.ListAsync())
+            .ReturnsAsync(allCars);
 
         var service = CreateQueryService();
 
@@ -256,16 +245,16 @@ public class CarQueryServiceTests
         var (cars, totalCount) = await service.Handle(query);
 
         // Assert
-        Assert.NotNull(cars);
-        Assert.Equal(pageSize, cars.Count());
-        Assert.Equal(pageSize * 3, totalCount);
-        _carRepositoryMock.Verify(repo => repo.GetPagedAsync(page, pageSize), Times.Once);
+        Assert.IsNotNull(cars);
+        Assert.AreEqual(pageSize, cars.Count());
+        Assert.AreEqual(pageSize * 3, totalCount);
+        _carRepositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
     private ICarQueryService CreateQueryService()
     {
-        // This would be the actual implementation
-        return new Mock<ICarQueryService>().Object;
+        // Instantiate the real query service with the mocked repository
+        return new CarQueryServiceImpl(_carRepositoryMock.Object);
     }
 
     private static List<Car> CreateTestCars(int count)
@@ -312,26 +301,27 @@ public class CarQueryServiceTests
     private static Car CreateTestCar(int id, string model = "Test Model", int year = 2020, 
         decimal price = 25000, string licensePlate = null, int brandId = 1)
     {
-        return new Car(
-            id,
-            model,
-            new Year(year),
-            new Price(price),
-            new LicensePlate(licensePlate ?? $"TST-{id:000}"),
-            null
-        )
-        {
-            BrandId = brandId
-        };
+        var cmd = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: $"Test Title {id}",
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: year,
+            BrandId: brandId,
+            Model: model,
+            Description: null,
+            PdfCertification: string.Empty,
+            ImageUrl: null,
+            Price: price,
+            LicensePlate: licensePlate ?? $"TST-{id:000}",
+            OriginalReservationId: 0
+        );
+
+        var car = new Car(cmd);
+        car.BrandId = brandId;
+        var idProp = typeof(Car).GetProperty("Id", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        idProp?.SetValue(car, id);
+        return car;
     }
 }
 
-// Mock query classes for testing
-public record GetAllCarsQuery;
-public record GetCarByIdQuery(int Id);
-public record GetCarsByBrandQuery(int BrandId);
-public record GetCarByLicensePlateQuery(string LicensePlate);
-public record GetCarsByYearRangeQuery(int FromYear, int ToYear);
-public record GetCarsByPriceRangeQuery(decimal MinPrice, decimal MaxPrice);
-public record SearchCarsQuery(string SearchTerm);
-public record GetCarsWithPaginationQuery(int Page, int PageSize);
+// NOTE: queries are defined in the API project; do not shadow them here.

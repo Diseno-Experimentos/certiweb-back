@@ -84,8 +84,7 @@ public class DataValidationSystemTests : SystemTestBase
             var response = await Client.PostAsJsonAsync("/api/v1/cars", carData);
 
             // Assert
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Created,
-                $"Invalid email format '{invalidEmail}' should be handled appropriately");
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Created);
         }
     }
 

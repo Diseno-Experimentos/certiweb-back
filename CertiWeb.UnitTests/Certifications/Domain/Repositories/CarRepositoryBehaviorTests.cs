@@ -2,11 +2,12 @@ using CertiWeb.API.Certifications.Domain.Model.Aggregates;
 using CertiWeb.API.Certifications.Domain.Model.ValueObjects;
 using CertiWeb.API.Certifications.Domain.Repositories;
 using Moq;
-using Xunit;
+using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace CertiWeb.UnitTests.Certifications.Domain.Repositories;
 
@@ -15,14 +16,15 @@ namespace CertiWeb.UnitTests.Certifications.Domain.Repositories;
 /// </summary>
 public class CarRepositoryBehaviorTests
 {
-    private readonly Mock<ICarRepository> _repositoryMock;
+    private Mock<ICarRepository> _repositoryMock = null!;
 
-    public CarRepositoryBehaviorTests()
+    [SetUp]
+    public void SetUp()
     {
         _repositoryMock = new Mock<ICarRepository>();
     }
 
-    [Fact]
+    [Test]
     public async Task FindByIdAsync_WhenCarExists_ShouldReturnCar()
     {
         // Arrange
@@ -36,13 +38,13 @@ public class CarRepositoryBehaviorTests
         var result = await _repositoryMock.Object.FindByIdAsync(carId);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(carId, result.Id);
-        Assert.Equal(expectedCar.Model, result.Model);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(carId, result.Id);
+        Assert.AreEqual(expectedCar.Model, result.Model);
         _repositoryMock.Verify(repo => repo.FindByIdAsync(carId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task FindByIdAsync_WhenCarDoesNotExist_ShouldReturnNull()
     {
         // Arrange
@@ -55,11 +57,11 @@ public class CarRepositoryBehaviorTests
         var result = await _repositoryMock.Object.FindByIdAsync(nonExistentId);
 
         // Assert
-        Assert.Null(result);
+        Assert.IsNull(result);
         _repositoryMock.Verify(repo => repo.FindByIdAsync(nonExistentId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task FindByBrandIdAsync_WhenCarsExist_ShouldReturnFilteredCars()
     {
         // Arrange
@@ -73,20 +75,20 @@ public class CarRepositoryBehaviorTests
         
         var expectedCars = cars.Where(c => c.BrandId == brandId).ToList();
         
-        _repositoryMock.Setup(repo => repo.FindByBrandIdAsync(brandId))
+        _repositoryMock.Setup(repo => repo.FindCarsByBrandIdAsync(brandId))
             .ReturnsAsync(expectedCars);
 
         // Act
-        var result = await _repositoryMock.Object.FindByBrandIdAsync(brandId);
+        var result = await _repositoryMock.Object.FindCarsByBrandIdAsync(brandId);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Count());
-        Assert.All(result, car => Assert.Equal(brandId, car.BrandId));
-        _repositoryMock.Verify(repo => repo.FindByBrandIdAsync(brandId), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(2, result.Count());
+        Assert.IsTrue(result.All(car => car.BrandId == brandId));
+        _repositoryMock.Verify(repo => repo.FindCarsByBrandIdAsync(brandId), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task AddAsync_WhenValidCar_ShouldAddSuccessfully()
     {
         // Arrange
@@ -94,78 +96,80 @@ public class CarRepositoryBehaviorTests
         var savedCar = CreateTestCar(1); // Car with ID after save
         
         _repositoryMock.Setup(repo => repo.AddAsync(It.IsAny<Car>()))
-            .ReturnsAsync(savedCar);
+            .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _repositoryMock.Object.AddAsync(newCar);
+        await _repositoryMock.Object.AddAsync(newCar);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
         _repositoryMock.Verify(repo => repo.AddAsync(It.Is<Car>(c => c.Model == newCar.Model)), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateAsync_WhenValidCar_ShouldUpdateSuccessfully()
     {
         // Arrange
         var existingCar = CreateTestCar(1);
-        var updatedCar = new Car(
-            1, 
-            "Updated Model", 
-            new Year(2021), 
-            new Price(30000), 
-            new LicensePlate("UPD-123"), 
-            null
+        var updateCmd = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: "Updated Model",
+            Owner: existingCar.Owner,
+            OwnerEmail: existingCar.OwnerEmail,
+            Year: 2021,
+            BrandId: existingCar.BrandId,
+            Model: "Updated Model",
+            Description: existingCar.Description,
+            PdfCertification: existingCar.PdfCertification?.Base64Data,
+            ImageUrl: existingCar.ImageUrl,
+            Price: 30000m,
+            LicensePlate: "UPD-123",
+            OriginalReservationId: existingCar.OriginalReservationId
         );
+        var updatedCar = new Car(updateCmd);
+        var idPropUpdated = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idPropUpdated?.SetValue(updatedCar, 1);
         
-        _repositoryMock.Setup(repo => repo.UpdateAsync(It.IsAny<Car>()))
-            .ReturnsAsync(updatedCar);
+        _repositoryMock.Setup(repo => repo.Update(It.IsAny<Car>()));
 
         // Act
-        var result = await _repositoryMock.Object.UpdateAsync(updatedCar);
+        _repositoryMock.Object.Update(updatedCar);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Updated Model", result.Model);
-        _repositoryMock.Verify(repo => repo.UpdateAsync(It.Is<Car>(c => c.Id == 1)), Times.Once);
+        _repositoryMock.Verify(repo => repo.Update(It.Is<Car>(c => c.Id == 1)), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task DeleteAsync_WhenValidId_ShouldDeleteSuccessfully()
     {
         // Arrange
         var carId = 1;
         
-        _repositoryMock.Setup(repo => repo.DeleteAsync(carId))
-            .ReturnsAsync(true);
+        var toDelete = CreateTestCar(carId);
+        _repositoryMock.Setup(repo => repo.Remove(It.IsAny<Car>()));
 
         // Act
-        var result = await _repositoryMock.Object.DeleteAsync(carId);
+        _repositoryMock.Object.Remove(toDelete);
 
         // Assert
-        Assert.True(result);
-        _repositoryMock.Verify(repo => repo.DeleteAsync(carId), Times.Once);
+        _repositoryMock.Verify(repo => repo.Remove(It.Is<Car>(c => c.Id == carId)), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task DeleteAsync_WhenInvalidId_ShouldReturnFalse()
     {
         // Arrange
         var nonExistentId = 999;
         
-        _repositoryMock.Setup(repo => repo.DeleteAsync(nonExistentId))
-            .ReturnsAsync(false);
+        var nonExistentCar = CreateTestCar(nonExistentId);
+        _repositoryMock.Setup(repo => repo.Remove(It.IsAny<Car>()));
 
         // Act
-        var result = await _repositoryMock.Object.DeleteAsync(nonExistentId);
+        _repositoryMock.Object.Remove(nonExistentCar);
 
         // Assert
-        Assert.False(result);
-        _repositoryMock.Verify(repo => repo.DeleteAsync(nonExistentId), Times.Once);
+        _repositoryMock.Verify(repo => repo.Remove(It.Is<Car>(c => c.Id == nonExistentId)), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task FindAllAsync_WhenCarsExist_ShouldReturnAllCars()
     {
         // Arrange
@@ -183,34 +187,33 @@ public class CarRepositoryBehaviorTests
         var result = await _repositoryMock.Object.ListAsync();
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(3, result.Count());
+        Assert.IsNotNull(result);
+        Assert.AreEqual(3, result.Count());
         _repositoryMock.Verify(repo => repo.ListAsync(), Times.Once);
     }
 
-    [Theory]
-    [InlineData("ABC")]
-    [InlineData("XYZ")]
-    [InlineData("123")]
+    [TestCase("ABC")]
+    [TestCase("XYZ")]
+    [TestCase("123")]
     public async Task FindByLicensePlateAsync_WithVariousPlates_ShouldCallRepository(string plateNumber)
     {
         // Arrange
         var licensePlate = new LicensePlate($"{plateNumber}-456");
         var expectedCar = CreateTestCar(1, licensePlate: licensePlate);
         
-        _repositoryMock.Setup(repo => repo.FindByLicensePlateAsync(licensePlate))
+        _repositoryMock.Setup(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value))
             .ReturnsAsync(expectedCar);
 
         // Act
-        var result = await _repositoryMock.Object.FindByLicensePlateAsync(licensePlate);
+        var result = await _repositoryMock.Object.FindCarByLicensePlateAsync(licensePlate.Value);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(licensePlate.Value, result.LicensePlate.Value);
-        _repositoryMock.Verify(repo => repo.FindByLicensePlateAsync(licensePlate), Times.Once);
+        Assert.IsNotNull(result);
+        Assert.AreEqual(licensePlate.Value, result.LicensePlate.Value);
+        _repositoryMock.Verify(repo => repo.FindCarByLicensePlateAsync(licensePlate.Value), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task Repository_ShouldMaintainConsistentBehavior_AcrossMultipleCalls()
     {
         // Arrange
@@ -224,23 +227,36 @@ public class CarRepositoryBehaviorTests
         var result2 = await _repositoryMock.Object.FindByIdAsync(1);
 
         // Assert
-        Assert.Equal(result1.Id, result2.Id);
-        Assert.Equal(result1.Model, result2.Model);
+        Assert.AreEqual(result1.Id, result2.Id);
+        Assert.AreEqual(result1.Model, result2.Model);
         _repositoryMock.Verify(repo => repo.FindByIdAsync(1), Times.Exactly(2));
     }
 
     private static Car CreateTestCar(int id, int brandId = 1, LicensePlate? licensePlate = null)
     {
-        return new Car(
-            id,
-            $"Test Model {id}",
-            new Year(2020),
-            new Price(25000),
-            licensePlate ?? new LicensePlate($"TST-{id:000}"),
-            null
-        )
-        {
-            BrandId = brandId
-        };
+        var cmd = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: $"Test Title {id}",
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: 2020,
+            BrandId: brandId,
+            Model: $"Test Model {id}",
+            Description: null,
+            PdfCertification: licensePlate != null ? string.Empty : string.Empty,
+            ImageUrl: null,
+            Price: 25000m,
+            LicensePlate: licensePlate?.Value ?? $"TST-{id:000}",
+            OriginalReservationId: 0
+        );
+
+        var car = new Car(cmd);
+        // set BrandId explicitly
+        car.BrandId = brandId;
+
+        // set Id via reflection (private setter)
+        var idProp = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idProp?.SetValue(car, id);
+
+        return car;
     }
 }

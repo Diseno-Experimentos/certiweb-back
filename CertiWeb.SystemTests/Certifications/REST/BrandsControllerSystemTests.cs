@@ -95,7 +95,11 @@ public class BrandsControllerSystemTests : SystemTestBase
     [Test]
     public async Task GetAllBrands_WithEmptyDatabase_ShouldReturnEmptyArray()
     {
-        // Arrange - Database is already clean from base setup
+        // Arrange - Clear database manually as SetUp seeds it
+        using (var context = GetFreshDbContext())
+        {
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM brands;");
+        }
         
         // Act
         var response = await Client.GetAsync("/api/v1/brands");

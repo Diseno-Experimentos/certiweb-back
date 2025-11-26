@@ -63,7 +63,7 @@ public class SecuritySystemTests : SystemTestBase
         response.StatusCode.Should().BeOneOf(
             HttpStatusCode.BadRequest,
             HttpStatusCode.RequestEntityTooLarge,
-            HttpStatusCode.PayloadTooLarge);
+            (HttpStatusCode)413);
     }
 
     [Test]

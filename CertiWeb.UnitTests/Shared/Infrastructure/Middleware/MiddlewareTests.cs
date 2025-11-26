@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ public class MiddlewareTests
 {
     #region Error Handling Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenNoException_ShouldContinuePipeline()
     {
         // Arrange
@@ -29,10 +29,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(200, context.Response.StatusCode);
+        Assert.AreEqual(200, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenArgumentException_ShouldReturn400()
     {
         // Arrange
@@ -44,10 +44,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(400, context.Response.StatusCode);
+        Assert.AreEqual(400, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenUnauthorizedException_ShouldReturn401()
     {
         // Arrange
@@ -59,10 +59,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(401, context.Response.StatusCode);
+        Assert.AreEqual(401, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenNotFoundException_ShouldReturn404()
     {
         // Arrange
@@ -74,10 +74,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(404, context.Response.StatusCode);
+        Assert.AreEqual(404, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenGenericException_ShouldReturn500()
     {
         // Arrange
@@ -89,10 +89,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(500, context.Response.StatusCode);
+        Assert.AreEqual(500, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorHandlingMiddleware_WhenException_ShouldLogError()
     {
         // Arrange
@@ -120,7 +120,7 @@ public class MiddlewareTests
 
     #region Request Logging Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task RequestLoggingMiddleware_WhenRequest_ShouldLogRequestDetails()
     {
         // Arrange
@@ -144,7 +144,7 @@ public class MiddlewareTests
             Times.AtLeastOnce);
     }
 
-    [Fact]
+    [Test]
     public async Task RequestLoggingMiddleware_WhenLongRequest_ShouldLogDuration()
     {
         // Arrange
@@ -172,7 +172,7 @@ public class MiddlewareTests
 
     #region Validation Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task ValidationMiddleware_WhenValidRequest_ShouldContinuePipeline()
     {
         // Arrange
@@ -184,10 +184,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(200, context.Response.StatusCode);
+        Assert.AreEqual(200, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ValidationMiddleware_WhenInvalidJson_ShouldReturn400()
     {
         // Arrange
@@ -199,10 +199,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(400, context.Response.StatusCode);
+        Assert.AreEqual(400, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task ValidationMiddleware_WhenMissingRequiredFields_ShouldReturn400()
     {
         // Arrange
@@ -214,14 +214,14 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(400, context.Response.StatusCode);
+        Assert.AreEqual(400, context.Response.StatusCode);
     }
 
     #endregion
 
     #region Rate Limiting Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task RateLimitingMiddleware_WhenUnderLimit_ShouldAllowRequest()
     {
         // Arrange
@@ -234,10 +234,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(200, context.Response.StatusCode);
+        Assert.AreEqual(200, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task RateLimitingMiddleware_WhenOverLimit_ShouldReturn429()
     {
         // Arrange
@@ -252,10 +252,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(429, context.Response.StatusCode);
+        Assert.AreEqual(429, context.Response.StatusCode);
     }
 
-    [Fact]
+    [Test]
     public async Task RateLimitingMiddleware_WhenOverLimit_ShouldIncludeRetryAfterHeader()
     {
         // Arrange
@@ -270,14 +270,14 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.True(context.Response.Headers.ContainsKey("Retry-After"));
+        Assert.IsTrue(context.Response.Headers.ContainsKey("Retry-After"));
     }
 
     #endregion
 
     #region Security Headers Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task SecurityHeadersMiddleware_WhenRequest_ShouldAddSecurityHeaders()
     {
         // Arrange
@@ -288,13 +288,13 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.True(context.Response.Headers.ContainsKey("X-Content-Type-Options"));
-        Assert.True(context.Response.Headers.ContainsKey("X-Frame-Options"));
-        Assert.True(context.Response.Headers.ContainsKey("X-XSS-Protection"));
-        Assert.True(context.Response.Headers.ContainsKey("Strict-Transport-Security"));
+        Assert.IsTrue(context.Response.Headers.ContainsKey("X-Content-Type-Options"));
+        Assert.IsTrue(context.Response.Headers.ContainsKey("X-Frame-Options"));
+        Assert.IsTrue(context.Response.Headers.ContainsKey("X-XSS-Protection"));
+        Assert.IsTrue(context.Response.Headers.ContainsKey("Strict-Transport-Security"));
     }
 
-    [Fact]
+    [Test]
     public async Task SecurityHeadersMiddleware_WhenRequest_ShouldSetCorrectHeaderValues()
     {
         // Arrange
@@ -305,17 +305,17 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"]);
-        Assert.Equal("DENY", context.Response.Headers["X-Frame-Options"]);
-        Assert.Equal("1; mode=block", context.Response.Headers["X-XSS-Protection"]);
-        Assert.Contains("max-age=", context.Response.Headers["Strict-Transport-Security"].ToString());
+        Assert.AreEqual("nosniff", context.Response.Headers["X-Content-Type-Options"]);
+        Assert.AreEqual("DENY", context.Response.Headers["X-Frame-Options"]);
+        Assert.AreEqual("1; mode=block", context.Response.Headers["X-XSS-Protection"]);
+        StringAssert.Contains("max-age=", context.Response.Headers["Strict-Transport-Security"].ToString());
     }
 
     #endregion
 
     #region CORS Middleware Tests
 
-    [Fact]
+    [Test]
     public async Task CorsMiddleware_WhenValidOrigin_ShouldAllowRequest()
     {
         // Arrange
@@ -330,10 +330,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal("https://example.com", context.Response.Headers["Access-Control-Allow-Origin"]);
+        Assert.AreEqual("https://example.com", context.Response.Headers["Access-Control-Allow-Origin"]);
     }
 
-    [Fact]
+    [Test]
     public async Task CorsMiddleware_WhenInvalidOrigin_ShouldNotSetCorsHeaders()
     {
         // Arrange
@@ -348,10 +348,10 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.False(context.Response.Headers.ContainsKey("Access-Control-Allow-Origin"));
+        Assert.IsFalse(context.Response.Headers.ContainsKey("Access-Control-Allow-Origin"));
     }
 
-    [Fact]
+    [Test]
     public async Task CorsMiddleware_WhenPreflightRequest_ShouldReturn200()
     {
         // Arrange
@@ -367,8 +367,8 @@ public class MiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(200, context.Response.StatusCode);
-        Assert.True(context.Response.Headers.ContainsKey("Access-Control-Allow-Methods"));
+        Assert.AreEqual(200, context.Response.StatusCode);
+        Assert.IsTrue(context.Response.Headers.ContainsKey("Access-Control-Allow-Methods"));
     }
 
     #endregion

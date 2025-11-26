@@ -55,7 +55,7 @@ public class LicensePlateTests
         // Act & Assert
         var action = () => new LicensePlate(emptyPlate);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("License plate cannot be empty (Parameter 'value')");
+            .WithMessage("License plate cannot be null or whitespace (Parameter 'value')");
     }
 
     [Test]
@@ -67,7 +67,7 @@ public class LicensePlateTests
         // Act & Assert
         var action = () => new LicensePlate(nullPlate!);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("License plate cannot be empty (Parameter 'value')");
+            .WithMessage("License plate cannot be null or whitespace (Parameter 'value')");
     }
 
     [Test]
@@ -79,7 +79,7 @@ public class LicensePlateTests
         // Act & Assert
         var action = () => new LicensePlate(whitespacePlate);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("License plate cannot be empty (Parameter 'value')");
+            .WithMessage("License plate cannot be null or whitespace (Parameter 'value')");
     }
 
     [Test]
@@ -91,7 +91,7 @@ public class LicensePlateTests
         // Act & Assert
         var action = () => new LicensePlate(shortPlate);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("License plate must be between 6 and 10 characters (Parameter 'value')");
+            .WithMessage("License plate must be between 3 and 15 characters (Parameter 'value')");
     }
 
     [Test]
@@ -103,33 +103,33 @@ public class LicensePlateTests
         // Act & Assert
         var action = () => new LicensePlate(longPlate);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("License plate must be between 6 and 10 characters (Parameter 'value')");
+            .WithMessage("License plate must be between 3 and 15 characters (Parameter 'value')");
     }
 
     [Test]
     public void Constructor_WithMinimumValidLength_ShouldCreateLicensePlateSuccessfully()
     {
         // Arrange
-        var minimumPlate = "ABC123"; // 6 characters
+        var minimumPlate = "ABC"; // 3 characters
 
         // Act
         var licensePlate = new LicensePlate(minimumPlate);
 
         // Assert
-        licensePlate.Value.Should().Be("ABC123");
+        licensePlate.Value.Should().Be("ABC");
     }
 
     [Test]
     public void Constructor_WithMaximumValidLength_ShouldCreateLicensePlateSuccessfully()
     {
         // Arrange
-        var maximumPlate = "ABCDEFGH12"; // 10 characters
+        var maximumPlate = "ABCDEFGHIJKLMNO"; // 15 characters
 
         // Act
         var licensePlate = new LicensePlate(maximumPlate);
 
         // Assert
-        licensePlate.Value.Should().Be("ABCDEFGH12");
+        licensePlate.Value.Should().Be("ABCDEFGHIJKLMNO");
     }
 
     [Test]

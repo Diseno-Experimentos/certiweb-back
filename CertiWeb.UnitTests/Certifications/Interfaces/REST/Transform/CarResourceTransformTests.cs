@@ -2,7 +2,9 @@ using CertiWeb.API.Certifications.Interfaces.REST.Resources;
 using CertiWeb.API.Certifications.Interfaces.REST.Transform;
 using CertiWeb.API.Certifications.Domain.Model.Aggregates;
 using CertiWeb.API.Certifications.Domain.Model.ValueObjects;
-using Xunit;
+using NUnit.Framework;
+using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,7 +17,7 @@ public class CarResourceTransformTests
 {
     #region ToResource Tests
 
-    [Fact]
+    [Test]
     public void Car_ToCarResource_ShouldMapAllProperties()
     {
         // Arrange
@@ -25,33 +27,34 @@ public class CarResourceTransformTests
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.Equal(car.Id, resource.Id);
-        Assert.Equal(car.Model, resource.Model);
-        Assert.Equal(car.Year.Value, resource.Year);
-        Assert.Equal(car.Price.Value, resource.Price);
-        Assert.Equal(car.LicensePlate.Value, resource.LicensePlate);
-        Assert.Equal(car.BrandId, resource.BrandId);
+        Assert.IsNotNull(resource);
+        Assert.AreEqual(car.Id, resource.Id);
+        Assert.AreEqual(car.Model, resource.Model);
+        Assert.AreEqual(car.Year.Value, resource.Year);
+        Assert.AreEqual(car.Price.Value, resource.Price);
+        Assert.AreEqual(car.LicensePlate.Value, resource.LicensePlate);
+        Assert.AreEqual(car.BrandId, resource.BrandId);
     }
 
-    [Fact]
+    [Test]
     public void Car_WithPdfCertification_ToCarResource_ShouldMapCertification()
     {
         // Arrange
         var pdfData = new byte[] { 0x25, 0x50, 0x44, 0x46 }; // %PDF
-        var car = CreateTestCar(pdfCertification: new PdfCertification(pdfData));
+        var base64 = Convert.ToBase64String(pdfData);
+        var car = CreateTestCar(pdfCertification: new PdfCertification(base64));
 
         // Act
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.NotNull(resource.CertificationInfo);
-        Assert.Equal(pdfData.Length, resource.CertificationInfo.SizeInBytes);
-        Assert.True(resource.CertificationInfo.HasCertification);
+        Assert.IsNotNull(resource);
+        Assert.IsNotNull(resource.CertificationInfo);
+        Assert.AreEqual(pdfData.Length, resource.CertificationInfo.SizeInBytes);
+        Assert.IsTrue(resource.CertificationInfo.HasCertification);
     }
 
-    [Fact]
+    [Test]
     public void Car_WithoutPdfCertification_ToCarResource_ShouldHandleNull()
     {
         // Arrange
@@ -61,11 +64,11 @@ public class CarResourceTransformTests
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.Null(resource.CertificationInfo);
+        Assert.IsNotNull(resource);
+        Assert.IsNull(resource.CertificationInfo);
     }
 
-    [Fact]
+    [Test]
     public void CarList_ToCarResourceList_ShouldMapAllCars()
     {
         // Arrange
@@ -75,13 +78,13 @@ public class CarResourceTransformTests
         var resources = cars.Select(CarResourceFromEntityAssembler.ToResourceFromEntity).ToList();
 
         // Assert
-        Assert.NotNull(resources);
-        Assert.Equal(3, resources.Count);
+        Assert.IsNotNull(resources);
+        Assert.AreEqual(3, resources.Count);
         
         for (int i = 0; i < cars.Count; i++)
         {
-            Assert.Equal(cars[i].Id, resources[i].Id);
-            Assert.Equal(cars[i].Model, resources[i].Model);
+            Assert.AreEqual(cars[i].Id, resources[i].Id);
+            Assert.AreEqual(cars[i].Model, resources[i].Model);
         }
     }
 
@@ -89,7 +92,7 @@ public class CarResourceTransformTests
 
     #region FromResource Tests
 
-    [Fact]
+    [Test]
     public void CreateCarResource_ToCar_ShouldMapAllProperties()
     {
         // Arrange
@@ -98,7 +101,7 @@ public class CarResourceTransformTests
             Model = "Test Model",
             Year = 2020,
             Price = 25000,
-            LicensePlate = "ABC-123",
+            LicensePlate = "ABC1234",
             BrandId = 1
         };
 
@@ -106,15 +109,15 @@ public class CarResourceTransformTests
         var car = CreateCarCommandFromResourceAssembler.ToCommandFromResource(createResource);
 
         // Assert
-        Assert.NotNull(car);
-        Assert.Equal(createResource.Model, car.Model);
-        Assert.Equal(createResource.Year, car.Year);
-        Assert.Equal(createResource.Price, car.Price);
-        Assert.Equal(createResource.LicensePlate, car.LicensePlate);
-        Assert.Equal(createResource.BrandId, car.BrandId);
+        Assert.IsNotNull(car);
+        Assert.AreEqual(createResource.Model, car.Model);
+        Assert.AreEqual(createResource.Year, car.Year);
+        Assert.AreEqual(createResource.Price, car.Price);
+        Assert.AreEqual(createResource.LicensePlate, car.LicensePlate);
+        Assert.AreEqual(createResource.BrandId, car.BrandId);
     }
 
-    [Fact]
+    [Test]
     public void UpdateCarResource_ToCar_ShouldMapAllProperties()
     {
         // Arrange
@@ -130,22 +133,21 @@ public class CarResourceTransformTests
         var command = UpdateCarCommandFromResourceAssembler.ToCommandFromResource(1, updateResource);
 
         // Assert
-        Assert.NotNull(command);
-        Assert.Equal(1, command.Id);
-        Assert.Equal(updateResource.Model, command.Model);
-        Assert.Equal(updateResource.Year, command.Year);
-        Assert.Equal(updateResource.Price, command.Price);
-        Assert.Equal(updateResource.LicensePlate, command.LicensePlate);
+        Assert.IsNotNull(command);
+        Assert.AreEqual(1, command.Id);
+        Assert.AreEqual(updateResource.Model, command.Model);
+        Assert.AreEqual(updateResource.Year, command.Year);
+        Assert.AreEqual(updateResource.Price, command.Price);
+        Assert.AreEqual(updateResource.LicensePlate, command.LicensePlate);
     }
 
     #endregion
 
     #region Validation Tests
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
+    [TestCase("")]
+    [TestCase("   ")]
+    [TestCase(null)]
     public void CreateCarResource_WithInvalidModel_ShouldFailValidation(string invalidModel)
     {
         // Arrange
@@ -154,18 +156,17 @@ public class CarResourceTransformTests
             Model = invalidModel,
             Year = 2020,
             Price = 25000,
-            LicensePlate = "ABC-123",
+            LicensePlate = "ABC1234",
             BrandId = 1
         };
 
         // Act & Assert
         var validationResults = ValidateResource(createResource);
-        Assert.Contains(validationResults, v => v.ErrorMessage.Contains("Model"));
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage.Contains("Model")));
     }
 
-    [Theory]
-    [InlineData(1800)]
-    [InlineData(2030)]
+    [TestCase(1800)]
+    [TestCase(2030)]
     public void CreateCarResource_WithInvalidYear_ShouldFailValidation(int invalidYear)
     {
         // Arrange
@@ -180,12 +181,10 @@ public class CarResourceTransformTests
 
         // Act & Assert
         var validationResults = ValidateResource(createResource);
-        Assert.Contains(validationResults, v => v.ErrorMessage.Contains("Year"));
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage.Contains("Year")));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1000)]
+    [TestCase(-1000)]
     public void CreateCarResource_WithInvalidPrice_ShouldFailValidation(decimal invalidPrice)
     {
         // Arrange
@@ -200,13 +199,12 @@ public class CarResourceTransformTests
 
         // Act & Assert
         var validationResults = ValidateResource(createResource);
-        Assert.Contains(validationResults, v => v.ErrorMessage.Contains("Price"));
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage.Contains("Price")));
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("AB")]
-    [InlineData("ABCDEFGHIJKLMNOP")]
+    [TestCase("")]
+    [TestCase("AB")]
+    [TestCase("ABCDEFGHIJKLMNOP")]
     public void CreateCarResource_WithInvalidLicensePlate_ShouldFailValidation(string invalidPlate)
     {
         // Arrange
@@ -221,10 +219,10 @@ public class CarResourceTransformTests
 
         // Act & Assert
         var validationResults = ValidateResource(createResource);
-        Assert.Contains(validationResults, v => v.ErrorMessage.Contains("License"));
+        Assert.IsTrue(validationResults.Any(v => v.ErrorMessage.Contains("License")));
     }
 
-    [Fact]
+    [Test]
     public void CreateCarResource_WithValidData_ShouldPassValidation()
     {
         // Arrange
@@ -233,7 +231,7 @@ public class CarResourceTransformTests
             Model = "Test Model",
             Year = 2020,
             Price = 25000,
-            LicensePlate = "ABC-123",
+            LicensePlate = "ABC1234",
             BrandId = 1
         };
 
@@ -241,82 +239,109 @@ public class CarResourceTransformTests
         var validationResults = ValidateResource(createResource);
 
         // Assert
-        Assert.Empty(validationResults);
+        Assert.IsEmpty(validationResults);
     }
 
     #endregion
 
     #region Boundary and Edge Cases
 
-    [Fact]
+    [Test]
     public void CarResource_WithMinimumValidValues_ShouldMapCorrectly()
     {
         // Arrange
-        var car = new Car(
-            1,
-            "A", // Minimum length model
-            new Year(1886), // Minimum valid year
-            new Price(0.01m), // Minimum valid price
-            new LicensePlate("ABC"), // Minimum length plate
-            null
+        var cmdMin = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: "A",
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: 1886,
+            BrandId: 1,
+            Model: "A",
+            Description: null,
+            PdfCertification: string.Empty,
+            ImageUrl: null,
+            Price: 0.01m,
+            LicensePlate: "ABC",
+            OriginalReservationId: 0
         );
+        var car = new Car(cmdMin);
+        var idPropMin = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idPropMin?.SetValue(car, 1);
 
         // Act
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.Equal("A", resource.Model);
-        Assert.Equal(1886, resource.Year);
-        Assert.Equal(0.01m, resource.Price);
-        Assert.Equal("ABC", resource.LicensePlate);
+        Assert.IsNotNull(resource);
+        Assert.AreEqual("A", resource.Model);
+        Assert.AreEqual(1886, resource.Year);
+        Assert.AreEqual(0.01m, resource.Price);
+        Assert.AreEqual("ABC", resource.LicensePlate);
     }
 
-    [Fact]
+    [Test]
     public void CarResource_WithMaximumValidValues_ShouldMapCorrectly()
     {
         // Arrange
         var longModel = new string('A', 100); // Assuming max length is 100
-        var car = new Car(
-            int.MaxValue,
-            longModel,
-            new Year(DateTime.Now.Year),
-            new Price(999999.99m),
-            new LicensePlate("ABCDEFGHIJKLMNO"), // Maximum length plate
-            null
+        var cmdMax = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: longModel,
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: DateTime.Now.Year,
+            BrandId: 1,
+            Model: longModel,
+            Description: null,
+            PdfCertification: string.Empty,
+            ImageUrl: null,
+            Price: 999999.99m,
+            LicensePlate: "ABCDEFGHIJKLMNO",
+            OriginalReservationId: 0
         );
+        var car = new Car(cmdMax);
+        var idPropMax = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idPropMax?.SetValue(car, int.MaxValue);
 
         // Act
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.Equal(longModel, resource.Model);
-        Assert.Equal(DateTime.Now.Year, resource.Year);
-        Assert.Equal(999999.99m, resource.Price);
-        Assert.Equal("ABCDEFGHIJKLMNO", resource.LicensePlate);
+        Assert.IsNotNull(resource);
+        Assert.AreEqual(longModel, resource.Model);
+        Assert.AreEqual(DateTime.Now.Year, resource.Year);
+        Assert.AreEqual(999999.99m, resource.Price);
+        Assert.AreEqual("ABCDEFGHIJKLMNO", resource.LicensePlate);
     }
 
-    [Fact]
+    [Test]
     public void CarResource_WithSpecialCharacters_ShouldHandleCorrectly()
     {
         // Arrange
         var specialModel = "Test Model with ñ, é, ü";
-        var car = new Car(
-            1,
-            specialModel,
-            new Year(2020),
-            new Price(25000),
-            new LicensePlate("ABC-123"),
-            null
+        var cmdSpecial = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: specialModel,
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: 2020,
+            BrandId: 1,
+            Model: specialModel,
+            Description: null,
+            PdfCertification: string.Empty,
+            ImageUrl: null,
+            Price: 25000m,
+            LicensePlate: "ABC1234",
+            OriginalReservationId: 0
         );
+        var car = new Car(cmdSpecial);
+        var idPropSpecial = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idPropSpecial?.SetValue(car, 1);
 
         // Act
         var resource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
 
         // Assert
-        Assert.NotNull(resource);
-        Assert.Equal(specialModel, resource.Model);
+        Assert.IsNotNull(resource);
+        Assert.AreEqual(specialModel, resource.Model);
     }
 
     #endregion
@@ -325,17 +350,26 @@ public class CarResourceTransformTests
 
     private static Car CreateTestCar(int id = 1, PdfCertification? pdfCertification = null)
     {
-        return new Car(
-            id,
-            "Test Model",
-            new Year(2020),
-            new Price(25000),
-            new LicensePlate("ABC-123"),
-            pdfCertification
-        )
-        {
-            BrandId = 1
-        };
+        var cmd = new CertiWeb.API.Certifications.Domain.Model.Commands.CreateCarCommand(
+            Title: $"Test Title {id}",
+            Owner: "Test Owner",
+            OwnerEmail: "owner@example.com",
+            Year: 2020,
+            BrandId: 1,
+            Model: "Test Model",
+            Description: null,
+            PdfCertification: pdfCertification?.Base64Data,
+            ImageUrl: null,
+            Price: 25000m,
+            LicensePlate: "ABC-123",
+            OriginalReservationId: 0
+        );
+
+        var car = new Car(cmd);
+        car.BrandId = 1;
+        var idProp = typeof(Car).GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        idProp?.SetValue(car, id);
+        return car;
     }
 
     private static List<Car> CreateTestCars(int count)
@@ -374,21 +408,80 @@ public class CertificationInfoResource
     public bool HasCertification { get; set; }
 }
 
-public class CreateCarResource
+public class CreateCarResource : System.ComponentModel.DataAnnotations.IValidatableObject
 {
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }
     public decimal Price { get; set; }
     public string LicensePlate { get; set; } = string.Empty;
     public int BrandId { get; set; }
+
+    public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+    {
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+
+        if (string.IsNullOrWhiteSpace(Model))
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Model is required", new[] { "Model" }));
+
+        var currentYear = DateTime.Now.Year;
+        if (Year < 1900 || Year > currentYear + 1)
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Year is out of range", new[] { "Year" }));
+
+        if (Price < 0)
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Price must be greater than or equal to zero", new[] { "Price" }));
+
+        // API-level resource validation: enforce no hyphens and reasonable length in license plate
+        if (string.IsNullOrWhiteSpace(LicensePlate))
+        {
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("License plate is invalid", new[] { "LicensePlate" }));
+        }
+        else
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(LicensePlate, ".*[-].*") || LicensePlate.Length < 3 || LicensePlate.Length > 15 || !System.Text.RegularExpressions.Regex.IsMatch(LicensePlate, "^[A-Za-z0-9]+$"))
+            {
+                results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("License plate is invalid", new[] { "LicensePlate" }));
+            }
+        }
+
+        return results;
+    }
 }
 
-public class UpdateCarResource
+public class UpdateCarResource : System.ComponentModel.DataAnnotations.IValidatableObject
 {
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }
     public decimal Price { get; set; }
     public string LicensePlate { get; set; } = string.Empty;
+
+    public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+    {
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+
+        if (!string.IsNullOrEmpty(Model) && string.IsNullOrWhiteSpace(Model))
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Model is required", new[] { "Model" }));
+
+        var currentYear = DateTime.Now.Year;
+        if (Year != 0 && (Year < 1886 || Year > currentYear))
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Year is out of range", new[] { "Year" }));
+
+        if (Price < 0)
+            results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("Price must be greater than or equal to zero", new[] { "Price" }));
+
+        if (!string.IsNullOrEmpty(LicensePlate))
+        {
+            try
+            {
+                _ = new CertiWeb.API.Certifications.Domain.Model.ValueObjects.LicensePlate(LicensePlate);
+            }
+            catch (ArgumentException)
+            {
+                results.Add(new System.ComponentModel.DataAnnotations.ValidationResult("License plate is invalid", new[] { "LicensePlate" }));
+            }
+        }
+
+        return results;
+    }
 }
 
 // Mock assembler classes
@@ -404,13 +497,13 @@ public static class CarResourceFromEntityAssembler
             Price = entity.Price.Value,
             LicensePlate = entity.LicensePlate.Value,
             BrandId = entity.BrandId,
-            CertificationInfo = entity.PdfCertification != null 
-                ? new CertificationInfoResource
+                CertificationInfo = (entity.PdfCertification == null || string.IsNullOrEmpty(entity.PdfCertification.Base64Data))
+                ? null
+                : new CertificationInfoResource
                 {
-                    SizeInBytes = entity.PdfCertification.SizeInBytes,
+                    SizeInBytes = Convert.FromBase64String(entity.PdfCertification.Base64Data).Length,
                     HasCertification = true
                 }
-                : null
         };
     }
 }

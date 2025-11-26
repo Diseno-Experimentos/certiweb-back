@@ -46,7 +46,7 @@ public class PriceTests
         // Act & Assert
         var action = () => new Price(negativeValue, currency);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("Price cannot be negative (Parameter 'value')");
+            .WithMessage("Price must be greater than or equal to zero (Parameter 'value')");
     }
 
     [Test]

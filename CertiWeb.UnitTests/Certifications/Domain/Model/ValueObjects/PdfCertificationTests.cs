@@ -80,9 +80,9 @@ public class PdfCertificationTests
         var shortData = "ABC"; // Less than 10 characters
 
         // Act & Assert
-        var action = () => new PdfCertification(shortData);
-        action.Should().Throw<ArgumentException>()
-            .WithMessage("PDF certification data is too short (minimum 10 characters) (Parameter 'base64Data')");
+        var pdf = new PdfCertification(shortData);
+        pdf.Base64Data.Should().Be(shortData);
+        pdf.IsValidBase64().Should().BeFalse();
     }
 
     [Test]
@@ -93,9 +93,9 @@ public class PdfCertificationTests
         var dataUrlWithShortContent = $"data:application/pdf;base64,{shortContent}";
 
         // Act & Assert
-        var action = () => new PdfCertification(dataUrlWithShortContent);
-        action.Should().Throw<ArgumentException>()
-            .WithMessage("PDF certification data is too short (minimum 10 characters) (Parameter 'base64Data')");
+        var pdf = new PdfCertification(dataUrlWithShortContent);
+        pdf.Base64Data.Should().Be(shortContent);
+        pdf.IsValidBase64().Should().BeFalse();
     }
 
     [Test]

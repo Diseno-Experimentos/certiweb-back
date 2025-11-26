@@ -49,7 +49,7 @@ public class ResilienceSystemTests : SystemTestBase
         }
 
         // Assert
-        successfulRequests.Should().BeGreaterThan(numberOfRequests * 0.95, // 95% success rate
+        successfulRequests.Should().BeGreaterThan((int)(numberOfRequests * 0.95), // 95% success rate
             $"At least 95% of requests should succeed. Success: {successfulRequests}, Failed: {failedRequests}");
     }
 
@@ -126,7 +126,7 @@ public class ResilienceSystemTests : SystemTestBase
         var failureCount = responses.Count(r => r.StatusCode != HttpStatusCode.Created);
 
         // Allow for some failures under load, but most should succeed
-        successCount.Should().BeGreaterThan(numberOfCars * 0.80, // 80% success rate
+        successCount.Should().BeGreaterThan((int)(numberOfCars * 0.80), // 80% success rate
             $"At least 80% of car creations should succeed under load. Success: {successCount}, Failed: {failureCount}");
 
         // Verify system is still responsive

@@ -1,4 +1,5 @@
 using CertiWeb.API.Shared.Infrastructure.Persistence.EFC.Configuration;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace CertiWeb.IntegrationTests.Shared.Infrastructure;
@@ -10,19 +11,21 @@ public abstract class DatabaseTestBase
 {
     protected AppDbContext Context { get; private set; } = null!;
     protected DbContextOptions<AppDbContext> Options { get; private set; } = null!;
+    private SqliteConnection? _connection;
 
     [SetUp]
     public virtual async Task SetUp()
     {
-        // Arrange - Create unique database for each test
-        var databaseName = $"TestDb_{Guid.NewGuid()}";
-        
+        // Arrange - Use SQLite in-memory provider with a dedicated connection per test
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
         Options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: databaseName)
+            .UseSqlite(_connection)
             .Options;
 
         Context = new AppDbContext(Options);
-        
+
         // Ensure database is created
         await Context.Database.EnsureCreatedAsync();
     }
@@ -35,6 +38,14 @@ public abstract class DatabaseTestBase
         {
             await Context.Database.EnsureDeletedAsync();
             await Context.DisposeAsync();
+            Context = null!;
+        }
+
+        if (_connection != null)
+        {
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
         }
     }
 

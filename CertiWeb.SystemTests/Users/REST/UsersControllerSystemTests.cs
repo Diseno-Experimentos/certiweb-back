@@ -271,7 +271,7 @@ public class UsersControllerSystemTests : SystemTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
         response.Headers.Should().ContainKey("Date");
-        response.Headers.CacheControl?.NoCache.Should().NotBeTrue(); // API should be cacheable
+        response.Headers.CacheControl?.NoCache.Should().BeFalse(); // API should be cacheable
     }
 
     /// <summary>

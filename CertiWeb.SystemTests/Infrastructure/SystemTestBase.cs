@@ -18,6 +18,9 @@ public abstract class SystemTestBase : IDisposable
         // Arrange - Create application factory and HTTP client
         Factory = new CertiWebApplicationFactory();
         Client = Factory.CreateClient();
+
+        // Add default authorization header so middleware accepts requests in tests
+        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "test-token");
         
         // Setup database
         DbContext = await Factory.CreateAndSeedDatabaseAsync();
@@ -27,17 +30,79 @@ public abstract class SystemTestBase : IDisposable
     public virtual async Task OneTimeTearDown()
     {
         // Cleanup
-        await DbContext.Database.EnsureDeletedAsync();
-        DbContext?.Dispose();
+        if (DbContext != null)
+        {
+            try
+            {
+                await DbContext.Database.EnsureDeletedAsync();
+            }
+            catch
+            {
+                // swallow - database may already be disposed/closed by the factory
+            }
+
+            try
+            {
+                DbContext.Dispose();
+            }
+            catch
+            {
+                // swallow
+            }
+        }
+
         Client?.Dispose();
-        await Factory?.DisposeAsync()!;
+
+        if (Factory != null)
+        {
+            await Factory.DisposeAsync();
+        }
     }
 
     [SetUp]
     public virtual async Task SetUp()
     {
-        // Override in derived classes if needed
-        await Task.CompletedTask;
+        // Ensure database is clean before each test to provide test isolation.
+        try
+        {
+            if (DbContext != null)
+            {
+                await DbContext.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
+                await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM cars;");
+                await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM brands;");
+                await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM admin_users;");
+                await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM reservations;");
+                await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM users;");
+                await DbContext.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = ON;");
+
+                // Re-seed model-level data (brands, admin user) so tests that expect application defaults
+                // have a consistent starting point. Use raw SQL to avoid EF tracking conflicts.
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("PRAGMA foreign_keys = OFF;");
+
+                // Insert brands (IDs 1..13)
+                sb.AppendLine("DELETE FROM brands;");
+                var brands = CertiWeb.API.Certifications.Infrastructure.BrandSeeder.GetPredefinedBrands();
+                foreach (var b in brands)
+                {
+                    // Use parameters to avoid SQL injection and respect values
+                    sb.AppendLine($"INSERT INTO brands (id, name, is_active) VALUES ({b.Id}, '{b.Name.Replace("'", "''")}', {(b.IsActive ? 1 : 0)});");
+                }
+
+                // Insert admin user
+                sb.AppendLine("DELETE FROM admin_users;");
+                var admin = CertiWeb.API.IAM.Infrastructure.Persistence.EFC.Seeders.AdminUserSeeder.GetAdminUser();
+                sb.AppendLine($"INSERT INTO admin_users (id, name, email, password) VALUES ({admin.Id}, '{admin.Name.Replace("'", "''")}', '{admin.Email.Replace("'", "''")}', '{admin.Password.Replace("'", "''")}');");
+
+                sb.AppendLine("PRAGMA foreign_keys = ON;");
+
+                await DbContext.Database.ExecuteSqlRawAsync(sb.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to clean and reseed test database before test.", ex);
+        }
     }
 
     [TearDown]
@@ -61,6 +126,11 @@ public abstract class SystemTestBase : IDisposable
     protected static async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
     {
         var jsonString = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(jsonString))
+        {
+            return default;
+        }
+
         return JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
