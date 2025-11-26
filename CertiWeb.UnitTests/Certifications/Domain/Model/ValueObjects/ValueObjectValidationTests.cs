@@ -23,7 +23,7 @@ public class ValueObjectValidationTests
         StringAssert.Contains("Year must be between", exception.Message);
     }
 
-    [TestCase(1886)] // First car year
+    [TestCase(1900)] // Minimum valid year
     [TestCase(2024)] // Current year
     [TestCase(2000)] // Valid year
     public void Year_WhenValidRange_ShouldCreateSuccessfully(int validYear)
@@ -307,16 +307,16 @@ public class ValueObjectValidationTests
     public void Year_BoundaryValues_ShouldBehaveCorrectly()
     {
         // Test minimum valid year
-        var minYear = new Year(1886);
-        Assert.AreEqual(1886, minYear.Value);
+        var minYear = new Year(1900);
+        Assert.AreEqual(1900, minYear.Value);
 
-        // Test maximum valid year (current year)
-        var maxYear = new Year(DateTime.Now.Year);
-        Assert.AreEqual(DateTime.Now.Year, maxYear.Value);
+        // Test maximum valid year (current year + 1)
+        var maxYear = new Year(DateTime.Now.Year + 1);
+        Assert.AreEqual(DateTime.Now.Year + 1, maxYear.Value);
 
         // Test boundary failures
-        Assert.Throws<ArgumentException>(() => new Year(1885));
-        Assert.Throws<ArgumentException>(() => new Year(DateTime.Now.Year + 1));
+        Assert.Throws<ArgumentException>(() => new Year(1899));
+        Assert.Throws<ArgumentException>(() => new Year(DateTime.Now.Year + 2));
     }
 
     [Test]

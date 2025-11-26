@@ -254,7 +254,7 @@ public class CarResourceTransformTests
             Title: "A",
             Owner: "Test Owner",
             OwnerEmail: "owner@example.com",
-            Year: 1886,
+            Year: 1900,
             BrandId: 1,
             Model: "A",
             Description: null,
@@ -274,7 +274,7 @@ public class CarResourceTransformTests
         // Assert
         Assert.IsNotNull(resource);
         Assert.AreEqual("A", resource.Model);
-        Assert.AreEqual(1886, resource.Year);
+        Assert.AreEqual(1900, resource.Year);
         Assert.AreEqual(0.01m, resource.Price);
         Assert.AreEqual("ABC", resource.LicensePlate);
     }

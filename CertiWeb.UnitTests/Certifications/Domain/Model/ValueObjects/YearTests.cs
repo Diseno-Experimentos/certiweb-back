@@ -39,9 +39,11 @@ public class YearTests
         // Arrange
         var nextYear = DateTime.Now.Year + 1;
 
-        // Act & Assert
-        var action = () => new Year(nextYear);
-        action.Should().Throw<ArgumentException>();
+        // Act
+        var year = new Year(nextYear);
+
+        // Assert
+        year.Value.Should().Be(nextYear);
     }
 
     [Test]
@@ -53,19 +55,19 @@ public class YearTests
         // Act & Assert
         var action = () => new Year(invalidYear);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("Year must be between 1886 and * (Parameter 'value')");
+            .WithMessage("Year must be between 1900 and * (Parameter 'value')");
     }
 
     [Test]
     public void Constructor_WithYearAfterNextYear_ShouldThrowArgumentException()
     {
         // Arrange
-        var invalidYear = DateTime.Now.Year + 1;
+        var invalidYear = DateTime.Now.Year + 2;
 
         // Act & Assert
         var action = () => new Year(invalidYear);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("Year must be between 1886 and * (Parameter 'value')");
+            .WithMessage("Year must be between 1900 and * (Parameter 'value')");
     }
 
     [Test]

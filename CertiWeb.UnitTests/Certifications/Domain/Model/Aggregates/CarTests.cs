@@ -169,7 +169,7 @@ public class CarTests
         // Act & Assert
         var action = () => new Car(command);
         action.Should().Throw<ArgumentException>()
-            .WithMessage("Year must be between 1886 and * (Parameter 'value')");
+            .WithMessage("Year must be between 1900 and * (Parameter 'value')");
     }
 
     [Test]

@@ -242,7 +242,7 @@ public class SecuritySystemTests : SystemTestBase
                 BrandId = 1,
                 Model = "Test Model",
                 Description = "Boundary test",
-                PdfCertification = "VGVzdCBkYXRh",
+                PdfCertification = "VGVzdFBERkRhdGFGaWxl",
                 ImageUrl = "https://example.com/image.jpg",
                 Price = 25000,
                 LicensePlate = $"BND{testCase.Year}",
@@ -264,6 +264,30 @@ public class SecuritySystemTests : SystemTestBase
                     $"Year {testCase.Year} should be accepted");
             }
         }
+    }
+
+    [Test]
+    public async Task Year1900_ShouldBeAccepted()
+    {
+        var payload = new
+        {
+            Title = "Boundary Test Car 1900",
+            Owner = "Test Owner",
+            OwnerEmail = "test@email.com",
+            Year = 1900,
+            BrandId = 1,
+            Model = "Test Model",
+            Description = "Boundary test",
+            PdfCertification = "VGVzdFBERkRhdGFGaWxl",
+            ImageUrl = "https://example.com/image.jpg",
+            Price = 25000,
+            LicensePlate = "BND1900",
+            OriginalReservationId = 200
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/v1/cars", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created, "Year 1900 should be accepted");
     }
 
     /// <summary>

@@ -83,14 +83,16 @@ public class CarCommandServiceImpl(ICarRepository carRepository, IBrandRepositor
                         throw new ArgumentException("Reservation already used", nameof(command.OriginalReservationId));
                     }
 
-                    // Detect transient SQLite busy/locked errors and retry
-                    if (inner is Microsoft.Data.Sqlite.SqliteException sqliteEx &&
-                        (sqliteEx.SqliteErrorCode == 5 || sqliteEx.SqliteErrorCode == 516))
+                    // Detect transient SQLite busy/locked errors and retry by inspecting the message
+                    var innerMsg = inner.Message ?? string.Empty;
+                    if (innerMsg.IndexOf("SQLite Error 5", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        innerMsg.IndexOf("database is locked", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        innerMsg.IndexOf("unable to delete/modify user-function", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         attempt++;
                         if (attempt >= maxAttempts)
                         {
-                            Console.WriteLine($"Exceeded retry attempts while creating car due to SQLite transient errors: {sqliteEx.Message}");
+                            Console.WriteLine($"Exceeded retry attempts while creating car due to SQLite transient errors: {innerMsg}");
                             throw new InvalidOperationException("An error occurred while saving the car to the database", dbEx);
                         }
                         // Backoff a bit before retrying

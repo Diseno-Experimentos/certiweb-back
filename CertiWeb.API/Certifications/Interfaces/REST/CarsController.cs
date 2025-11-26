@@ -27,26 +27,45 @@ public class CarsController(ICarCommandService carCommandService, ICarQueryServi
     [HttpPost]
     public async Task<ActionResult<CarResource>> CreateCar([FromBody] CreateCarResource resource)
     {
+        Console.WriteLine("--- CREATE CAR ACTION START ---");
+        Console.WriteLine($"Received resource: Title='{resource.Title}', Year={resource.Year}, BrandId={resource.BrandId}, LicensePlate='{resource.LicensePlate}'");
+
         // Basic input validation to provide friendly HTTP 400 responses for invalid inputs
         if (resource.Year < 1900 || resource.Year > DateTime.Now.Year + 1)
+        {
+            Console.WriteLine($"!!! YEAR VALIDATION FAILED: Year '{resource.Year}' is out of range.");
             return BadRequest(new { message = "Validation error", details = "Year must be between 1900 and current year + 1" });
+        }
         if (resource.BrandId <= 0)
+        {
+            Console.WriteLine($"!!! BRANDID VALIDATION FAILED: BrandId '{resource.BrandId}' is not positive.");
             return BadRequest(new { message = "Validation error", details = "BrandId must be a positive integer" });
+        }
         if (resource.Price < 0)
+        {
+            Console.WriteLine($"!!! PRICE VALIDATION FAILED: Price '{resource.Price}' is negative.");
             return BadRequest(new { message = "Validation error", details = "Price must be non-negative" });
+        }
         // Disallow hyphens in license plates for REST API validation layer (system tests expect this behavior)
         if (resource.LicensePlate != null && System.Text.RegularExpressions.Regex.IsMatch(resource.LicensePlate, ".*[-].*"))
+        {
+            Console.WriteLine($"!!! LICENSE PLATE VALIDATION FAILED: LicensePlate '{resource.LicensePlate}' contains a hyphen.");
             return BadRequest(new { message = "Validation error", details = "License plate cannot contain hyphens or special characters" });
+        }
         // Validate pdf certification base64 quick check before creating domain object
         if (!string.IsNullOrWhiteSpace(resource.PdfCertification))
         {
             var tmp = new CertiWeb.API.Certifications.Domain.Model.ValueObjects.PdfCertification(resource.PdfCertification);
             if (!tmp.IsValidBase64())
-            return BadRequest(new { message = "Validation error", details = "Invalid PDF certification" });
+            {
+                Console.WriteLine($"!!! PDF VALIDATION FAILED: PdfCertification is not valid Base64.");
+                return BadRequest(new { message = "Validation error", details = "Invalid PDF certification" });
+            }
         }
 
         try
         {
+            Console.WriteLine("Validation passed, proceeding to command creation.");
             Console.WriteLine($"Received CreateCarResource: {System.Text.Json.JsonSerializer.Serialize(resource)}");
             
             var createCarCommand = CreateCarCommandFromResourceAssembler.ToCommandFromResource(resource);
@@ -54,6 +73,7 @@ public class CarsController(ICarCommandService carCommandService, ICarQueryServi
             
             if (car == null) 
             {
+                Console.WriteLine("!!! carCommandService.Handle returned null.");
                 return BadRequest(new { 
                     message = "Failed to create car certification.", 
                     details = "Check if reservation ID is already used, license plate already exists, brand ID is valid, or validation requirements are met.",
@@ -66,6 +86,7 @@ public class CarsController(ICarCommandService carCommandService, ICarQueryServi
                 });
             }
             
+            Console.WriteLine($"Car created with ID: {car.Id}. Returning CreatedAtAction.");
             var carResource = CarResourceFromEntityAssembler.ToResourceFromEntity(car);
             return CreatedAtAction(nameof(GetCarById), new { carId = car.Id }, carResource);
         }

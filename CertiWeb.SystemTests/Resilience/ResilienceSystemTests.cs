@@ -163,7 +163,7 @@ public class ResilienceSystemTests : SystemTestBase
             BrandId = 1,
             Model = "Test Model",
             Description = "Test",
-            PdfCertification = "VGVzdCBkYXRh",
+            PdfCertification = "VGVzdFBERkRhdGFGaWxl",
             ImageUrl = "https://example.com/image.jpg",
             Price = 25000,
             LicensePlate = "DEF5678",
