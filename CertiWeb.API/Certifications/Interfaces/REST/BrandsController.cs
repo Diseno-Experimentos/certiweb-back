@@ -1,4 +1,6 @@
 using System.Net.Mime;
+using System.Linq;
+using CertiWeb.API.Users.Infrastructure.Pipeline.Middleware.Attributes;
 using CertiWeb.API.Certifications.Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -16,6 +18,7 @@ public class BrandsController(IBrandRepository brandRepository) : ControllerBase
     /// </summary>
     /// <returns>A collection of all active brands.</returns>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<object>>> GetAllBrands()
     {
         var brands = await brandRepository.GetActiveBrandsAsync();

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CertiWeb.API.Certifications.Interfaces.REST.Resources;
 
 /// <summary>
@@ -16,16 +18,16 @@ namespace CertiWeb.API.Certifications.Interfaces.REST.Resources;
 /// <param name="LicensePlate">The license plate.</param>
 /// <param name="OriginalReservationId">The original reservation ID.</param>
 public record CreateCarResource(
-    string Title,
-    string Owner,
-    string OwnerEmail,
-    int Year,
-    int BrandId,
-    string Model,
-    string? Description,
-    string PdfCertification,
-    string? ImageUrl,
-    decimal Price,
-    string LicensePlate,
-    int OriginalReservationId
+    [Required] [MaxLength(200)] string Title,
+    [Required] [MaxLength(100)] string Owner,
+    [Required] [MaxLength(100)] [EmailAddress] string OwnerEmail,
+    [Required] int Year,
+    [Required] int BrandId,
+    [Required] [MaxLength(100)] string Model,
+    [MaxLength(500)] string? Description,
+    [Required] string PdfCertification,
+    [MaxLength(500)] string? ImageUrl,
+    [Required] decimal Price,
+    [Required] string LicensePlate,
+    [Required] int OriginalReservationId
 );

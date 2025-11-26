@@ -35,4 +35,11 @@ public interface IUserQueryService
     /// <param name="query">The query containing the email and password to search for.</param>
     /// <returns>The user if found with matching credentials, null otherwise.</returns>
     Task<User?> Handle(GetUserByEmailAndPassword query);
+
+    /// <summary>
+    /// Retrieves users by their subscription plan.
+    /// </summary>
+    /// <param name="query">The query containing the plan to filter by.</param>
+    /// <returns>A collection of users with the specified plan.</returns>
+    Task<IEnumerable<User>> Handle(GetUsersByPlanQuery query);
 }

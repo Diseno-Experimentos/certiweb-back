@@ -93,9 +93,9 @@ public class Car
     public int OriginalReservationId { get; set; }
 
     /// <summary>
-    /// Protected constructor for EF Core.
+    /// Parameterless constructor for EF Core and tests.
     /// </summary>
-    protected Car()
+    public Car()
     {
         Title = string.Empty;
         Owner = string.Empty;

@@ -45,4 +45,19 @@ public class Brand
         Name = name;
         IsActive = true;
     }
+
+    /// <summary>
+    /// Initializes a new instance of the Brand class with the specified id and name.
+    /// </summary>
+    /// <param name="id">The brand id.</param>
+    /// <param name="name">The brand name.</param>
+    public Brand(int id, string name)
+    {
+        Id = id;
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Brand name cannot be empty", nameof(name));
+
+        Name = name;
+        IsActive = true;
+    }
 }

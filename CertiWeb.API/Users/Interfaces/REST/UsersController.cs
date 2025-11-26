@@ -66,6 +66,35 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves a specific user by their email.
+    /// </summary>
+    /// <param name="email">The email of the user to retrieve.</param>
+    /// <returns>The user resource if found, NotFound if the user doesn't exist.</returns>
+    [HttpGet("email/{email}")]
+    public async Task<ActionResult<UserResource>> GetUserByEmail(string email)
+    {
+        var getUserByEmailQuery = new GetUserByEmail(email);
+        var user = await userQueryService.Handle(getUserByEmailQuery);
+        if (user == null) return NotFound();
+        var userResource = UserResourceFromEntityAssembler.ToResourceFromEntity(user);
+        return Ok(userResource);
+    }
+
+    /// <summary>
+    /// Retrieves users by their plan.
+    /// </summary>
+    /// <param name="plan">The plan to filter by.</param>
+    /// <returns>A collection of user resources with the specified plan.</returns>
+    [HttpGet("plan/{plan}")]
+    public async Task<ActionResult<IEnumerable<UserResource>>> GetUsersByPlan(string plan)
+    {
+        var getUsersByPlanQuery = new GetUsersByPlanQuery(plan);
+        var users = await userQueryService.Handle(getUsersByPlanQuery);
+        var userResources = users.Select(UserResourceFromEntityAssembler.ToResourceFromEntity);
+        return Ok(userResources);
+    }
+
+    /// <summary>
     /// Migrates existing plain-text passwords to hashed passwords using BCrypt.
     /// This endpoint should be used only once during system migration.
     /// </summary>

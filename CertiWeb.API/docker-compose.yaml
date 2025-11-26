@@ -1,6 +1,6 @@
 services:
   api:
-    image: "monocrack/certiweb-backend"
+    image: "svennn/certiweb-api:latest"
     ports:
       - "3000:8080"
     depends_on:
@@ -17,6 +17,17 @@ services:
       MYSQL_DATABASE: certiweb
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - certiweb-network
+
+  frontend:
+    image: "svennn/certiweb-frontend:latest"
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    environment:
+      - VITE_SERVER_BASE_PATH=http://api:80/api/v1
     networks:
       - certiweb-network
 

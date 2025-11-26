@@ -20,4 +20,14 @@ public class UserRepository(AppDbContext context) : BaseRepository<User>(context
     {
         return await Context.Set<User>().FirstOrDefaultAsync(u => u.email == email);
     }
+
+    /// <summary>
+    /// Finds users by their subscription plan using Entity Framework Core.
+    /// </summary>
+    /// <param name="plan">The plan to filter by.</param>
+    /// <returns>A collection of users with the specified plan.</returns>
+    public async Task<IEnumerable<User>> FindUsersByPlanAsync(string plan)
+    {
+        return await Context.Set<User>().Where(u => u.plan == plan).ToListAsync();
+    }
 }

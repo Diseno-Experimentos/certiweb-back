@@ -12,4 +12,9 @@ RUN dotnet publish -o out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:b4bea3a52a0a77317fa93c5bbdb076623f81e3e2f201078d89914da71318b5d8
 WORKDIR /App
 COPY --from=build /App/out .
+
+# Make sure the app listens on port 80 inside the container
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+
 ENTRYPOINT ["dotnet", "CertiWeb.API.dll"]

@@ -62,4 +62,14 @@ public class UserQueryServiceImpl(IUserRepository userRepository, IHashingServic
         // Return user only if password is valid
         return isPasswordValid ? user : null;
     }
+
+    /// <summary>
+    /// Retrieves users by their subscription plan.
+    /// </summary>
+    /// <param name="query">The query containing the plan to filter by.</param>
+    /// <returns>A collection of users with the specified plan.</returns>
+    public async Task<IEnumerable<User>> Handle(GetUsersByPlanQuery query)
+    {
+        return await userRepository.FindUsersByPlanAsync(query.Plan);
+    }
 }

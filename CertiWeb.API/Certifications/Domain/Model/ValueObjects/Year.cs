@@ -10,9 +10,11 @@ public record Year
     public Year(int value)
     {
         var currentYear = DateTime.Now.Year;
-        if (value < 1900 || value > currentYear + 1)
-            throw new ArgumentException($"Year must be between 1900 and {currentYear + 1}", nameof(value));
-        
+        // Accept years from 1900 up to current year + 1 to align with API and system tests
+        var minYear = 1900;
+        if (value < minYear || value > currentYear + 1)
+            throw new ArgumentException($"Year must be between {minYear} and {currentYear + 1}", nameof(value));
+
         Value = value;
     }
 

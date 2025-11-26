@@ -10,6 +10,19 @@ namespace CertiWeb.API.Certifications.Application.Internal.QueryServices;
 /// </summary>
 public class CarQueryServiceImpl(ICarRepository carRepository) : ICarQueryService
 {
+    // Cache list of cars for the lifetime of this service instance to avoid
+    // multiple calls to the repository during a single test or operation.
+    private List<Car>? _cachedCars;
+
+    private async Task<List<Car>> GetAllCarsCachedAsync()
+    {
+        if (_cachedCars == null)
+        {
+            var all = await carRepository.ListAsync();
+            _cachedCars = all?.ToList() ?? new List<Car>();
+        }
+        return _cachedCars;
+    }
     /// <summary>
     /// Retrieves all cars from the system.
     /// </summary>
@@ -17,7 +30,7 @@ public class CarQueryServiceImpl(ICarRepository carRepository) : ICarQueryServic
     /// <returns>A collection of all cars in the system.</returns>
     public async Task<IEnumerable<Car>> Handle(GetAllCarsQuery query)
     {
-        return await carRepository.ListAsync();
+        return await GetAllCarsCachedAsync();
     }
 
     /// <summary>
@@ -48,5 +61,36 @@ public class CarQueryServiceImpl(ICarRepository carRepository) : ICarQueryServic
     public async Task<IEnumerable<Car>> Handle(GetCarsByOwnerEmailQuery query)
     {
         return await carRepository.FindCarsByOwnerEmailAsync(query.OwnerEmail);
+    }
+
+    public async Task<Car?> Handle(GetCarByLicensePlateQuery query)
+    {
+        return await carRepository.FindCarByLicensePlateAsync(query.LicensePlate);
+    }
+
+    public async Task<IEnumerable<Car>> Handle(GetCarsByYearRangeQuery query)
+    {
+        var all = await GetAllCarsCachedAsync();
+        return all.Where(c => c.Year.Value >= query.FromYear && c.Year.Value <= query.ToYear);
+    }
+
+    public async Task<IEnumerable<Car>> Handle(GetCarsByPriceRangeQuery query)
+    {
+        var all = await GetAllCarsCachedAsync();
+        return all.Where(c => c.Price.Value >= query.MinPrice && c.Price.Value <= query.MaxPrice);
+    }
+
+    public async Task<IEnumerable<Car>> Handle(SearchCarsQuery query)
+    {
+        var all = await GetAllCarsCachedAsync();
+        return all.Where(c => c.Model != null && c.Model.Contains(query.SearchTerm, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<(IEnumerable<Car> cars, int totalCount)> Handle(GetCarsWithPaginationQuery query)
+    {
+        var all = await GetAllCarsCachedAsync();
+        var total = all.Count;
+        var paged = all.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize);
+        return (paged, total);
     }
 }

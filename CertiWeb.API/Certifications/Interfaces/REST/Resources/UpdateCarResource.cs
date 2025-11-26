@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CertiWeb.API.Certifications.Interfaces.REST.Resources;
 
 /// <summary>
@@ -16,15 +18,15 @@ namespace CertiWeb.API.Certifications.Interfaces.REST.Resources;
 /// <param name="Price">The car price.</param>
 /// <param name="LicensePlate">The license plate.</param>
 public record UpdateCarResource(
-    string? Title,
-    string? Owner,
-    string? OwnerEmail,
+    [MaxLength(200)] string? Title,
+    [MaxLength(100)] string? Owner,
+    [MaxLength(100)] [EmailAddress] string? OwnerEmail,
     int? Year,
     int? BrandId,
-    string? Model,
-    string? Description,
+    [MaxLength(100)] string? Model,
+    [MaxLength(500)] string? Description,
     string? PdfCertification,
-    string? ImageUrl,
+    [MaxLength(500)] string? ImageUrl,
     decimal? Price,
     string? LicensePlate
 );

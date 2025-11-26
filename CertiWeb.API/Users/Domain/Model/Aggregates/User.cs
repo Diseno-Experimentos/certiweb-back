@@ -39,6 +39,7 @@ public partial class User
     /// Initializes a new instance of the User class.
     /// This parameterless constructor is required by Entity Framework Core.
     /// </summary>
+    [SetsRequiredMembers]
     public User()
     {
         name = string.Empty;

@@ -35,4 +35,11 @@ public interface ICarQueryService
     /// <param name="query">The query containing the owner email.</param>
     /// <returns>A collection of cars for the specified owner.</returns>
     Task<IEnumerable<Car>> Handle(GetCarsByOwnerEmailQuery query);
+    
+    // Additional query handlers added to align with unit tests
+    Task<Car?> Handle(GetCarByLicensePlateQuery query);
+    Task<IEnumerable<Car>> Handle(GetCarsByYearRangeQuery query);
+    Task<IEnumerable<Car>> Handle(GetCarsByPriceRangeQuery query);
+    Task<IEnumerable<Car>> Handle(SearchCarsQuery query);
+    Task<(IEnumerable<Car> cars, int totalCount)> Handle(GetCarsWithPaginationQuery query);
 }

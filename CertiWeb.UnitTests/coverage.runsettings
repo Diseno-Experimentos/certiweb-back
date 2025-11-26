@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage" uri="datacollector://Microsoft/CodeCoverage/2.0">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>
+            <!-- Only include the main API assembly to focus coverage on app code -->
+            <ModulePath>.*CertiWeb.API.*</ModulePath>
+          </Include>
+          <Exclude>
+            <ModulePath>.*obj.*</ModulePath>
+            <ModulePath>.*bin.*</ModulePath>
+            <ModulePath>.*Program.*</ModulePath>
+          </Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
