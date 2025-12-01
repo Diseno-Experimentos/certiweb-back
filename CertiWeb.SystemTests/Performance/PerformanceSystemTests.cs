@@ -65,7 +65,11 @@ public class PerformanceSystemTests : SystemTestBase
             carCreationTasks.Add(Client.PostAsJsonAsync("/api/v1/cars", carResource));
         }
 
-        await Task.WhenAll(carCreationTasks);
+        var carCreationResponses = await Task.WhenAll(carCreationTasks);
+        
+        // Verify all cars were created successfully
+        var successfulCreations = carCreationResponses.Count(r => r.StatusCode == HttpStatusCode.Created);
+        successfulCreations.Should().Be(numberOfCars, $"All {numberOfCars} cars should be created successfully");
         
         // Act - Retrieve all cars
         var getAllResponse = await Client.GetAsync("/api/v1/cars");
