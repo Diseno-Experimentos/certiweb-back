@@ -43,6 +43,7 @@ public class PerformanceSystemTests : SystemTestBase
         // Act - Create cars
         stopwatch.Start();
         var carCreationTasks = new List<Task<HttpResponseMessage>>();
+        var baseReservationId = 1000 + Random.Shared.Next(1000, 9999);
         
         for (int i = 0; i < numberOfCars; i++)
         {
@@ -58,8 +59,8 @@ public class PerformanceSystemTests : SystemTestBase
                 carCommand.PdfCertification,
                 carCommand.ImageUrl,
                 carCommand.Price,
-                $"CAR{i:D4}01", // Unique license plate
-                carCommand.OriginalReservationId + i // Unique reservation ID
+                $"PERF{i:D5}", // Unique license plate
+                baseReservationId + i // Unique reservation ID
             );
             
             carCreationTasks.Add(Client.PostAsJsonAsync("/api/v1/cars", carResource));
